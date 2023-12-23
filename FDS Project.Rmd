@@ -1,0 +1,211 @@
+---
+title: "FDS Project"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+Load data set.
+```{r}
+setwd("F:/Data Science/Project") # change directory
+covid = read.csv("covid.csv", na.strings = "?", stringsAsFactors = T) # read data set
+
+covid[is.na(covid)] = 0 # Replace missing values with 0
+```
+
+```{r}
+summary(covid)
+```
+
+Q1) Are there any geographical clusters of high Covid-19 hospitalizations?
+```{r}
+library(ggplot2)
+
+# Create a ggplot object using the 'covid' data frame, mapping the 'state' variable to the # x-axis and 'total_adult_patients_hospitalized_confirmed_and_suspected_covid' variable to # the y-axis
+ggplot(covid, aes(x = state, y = total_adult_patients_hospitalized_confirmed_and_suspected_covid)) +
+  
+  # Add a bar geometry to the plot, representing the data as bars
+  # 'stat = "identity"' is used when the y values are the actual heights of the bars
+  geom_bar(stat = "identity", fill = "skyblue") +
+  
+  # Set the title, x-axis label, and y-axis label for the plot
+  labs(title = "Covid-19 Hospitalizations by State",
+       x = "State",
+       y = "Total hospitalizations") +
+  
+  # Rotate for better reading
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+CA has the highest hospitalizations but the adjacent states have very less count.
+From my observation of the chart, NC, SC, FL, GA, VA and PA form a good cluster of states with abundant number of hospitalizations.
+
+
+Q2) Which regions/state might need more resources to deal with the pandemic?
+```{r}
+library(ggplot2)
+
+# Create a dot plot of staffing shortage by state
+ggplot(covid, aes(x = state, y = critical_staffing_shortage_anticipated_within_week_yes)) +
+  
+  # Add points to the plot, representing the data as dots
+  # 'size = 3' sets the size of the dots
+  geom_point(size = 3, color = "skyblue") +
+  
+  # Set the title, x-axis label, and y-axis label for the plot
+  labs(title = "States with Anticipated Critical Staffing Shortage within a Week",
+    x = "State",
+    y = "Number of hospitals anticipating staffing shortage") +
+  
+    # Rotate for better reading
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+# Create another dot plot of inpatient beds utilization by state
+ggplot(covid, aes(x = state, y = inpatient_beds_utilization)) +
+  geom_point(size = 3, color = "skyblue") +
+  labs(title = "States w.r.t.o inpatient beds utilization",
+    x = "State",
+    y = "Percent of inpatient beds being utilized") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+CA and MI are the states that needs more staff within the next week.
+RI has the highest percentage of inpatient beds utilized, while WY has the least. So, some beds from WY can be shifted to RI as backup.
+
+
+Q3) Any regional differences in ICU bed utilization?
+```{r}
+library(ggplot2)
+
+# Create a box plot of adult ICU bed utilization by state
+ggplot(covid, aes(x = state, y = adult_icu_bed_covid_utilization)) +
+  geom_boxplot() +
+  labs(title = "ICU Bed Utilization by State (Adult)", x = "State", y = "ICU Bed Utilization") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Create a box plot of total staffed pediatric ICU bed coverage by state
+ggplot(covid, aes(x = state, y = total_staffed_pediatric_icu_beds_coverage)) +
+  geom_boxplot() +
+  labs(title = "ICU Bed Utilization by State (Pediatric)", x = "State", y = "ICU Bed Utilization") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+AZ and MD are on top of the list when it comes to adult ICU beds utilization.
+CA and TX are on top of the list when it comes to pediatric ICU beds utilization.
+
+
+
+Q4) Does age have a say in Covid-19 hospitalizations? How different do pediatrics and adults fare?
+```{r}
+library(dplyr)
+library(tidyr)
+
+# Summarize the data by age group
+covid_summary <- covid %>%
+  summarise(
+    age_18_19 = sum(previous_day_admission_adult_covid_confirmed_18.19),
+    age_20_29 = sum(previous_day_admission_adult_covid_confirmed_20.29),
+    age_30_39 = sum(previous_day_admission_adult_covid_confirmed_30.39),
+    age_40_49 = sum(previous_day_admission_adult_covid_confirmed_40.49),
+    age_50_59 = sum(previous_day_admission_adult_covid_confirmed_50.59),
+    age_60_69 = sum(previous_day_admission_adult_covid_confirmed_60.69),
+    age_70_79 = sum(previous_day_admission_adult_covid_confirmed_70.79),
+    age_80_plus = sum(previous_day_admission_adult_covid_confirmed_80.),
+    age_unknown = sum(previous_day_admission_adult_covid_confirmed_unknown)
+  )
+
+# Display the summary
+print(covid_summary)
+
+# Find age group with the most and least patients
+max_age_group <- colnames(covid_summary)[which.max(covid_summary)]
+min_age_group <- colnames(covid_summary)[which.min(covid_summary)]
+
+print(paste("Age group with most patients:", max_age_group))
+print(paste("Age group with least patients:", min_age_group))
+
+
+# Calculate the mean counts in all columns
+mean_counts <- covid %>%
+  summarise(
+    mean_18_19 = mean(previous_day_admission_adult_covid_confirmed_18.19),
+    mean_20_29 = mean(previous_day_admission_adult_covid_confirmed_20.29),
+    mean_30_39 = mean(previous_day_admission_adult_covid_confirmed_30.39),
+    mean_40_49 = mean(previous_day_admission_adult_covid_confirmed_40.49),
+    mean_50_59 = mean(previous_day_admission_adult_covid_confirmed_50.59),
+    mean_60_69 = mean(previous_day_admission_adult_covid_confirmed_60.69),
+    mean_70_79 = mean(previous_day_admission_adult_covid_confirmed_70.79),
+    mean_80_plus = mean(previous_day_admission_adult_covid_confirmed_80.),
+    mean_unknown = mean(previous_day_admission_adult_covid_confirmed_unknown)
+  )
+
+# Display the mean counts
+print(mean_counts)
+
+
+# Create box plots to visualize the distribution of admissions for each group
+boxplot(
+  covid$previous_day_admission_adult_covid_confirmed,
+  covid$previous_day_admission_pediatric_covid_confirmed,
+  names = c("Adults", "Pediatrics"),
+  main = "COVID Admissions Comparison",
+  ylab = "Number of Admissions"
+)
+
+# Perform a t-test to compare means between the two groups
+t_test_result <- t.test(
+  covid$previous_day_admission_adult_covid_confirmed,
+  covid$previous_day_admission_pediatric_covid_confirmed
+)
+
+# Display the t-test result
+print(t_test_result)
+
+```
+Also, p-value is less than 0.05 and that means the variable is statistically significant.
+
+
+Q5) Any Correlation between beds occupied and deaths recorded?
+```{r}
+# Calculate correlation coefficient
+cor(covid$deaths_covid, covid$inpatient_beds_used_covid)
+
+# Scatter plot
+pairs(~  deaths_covid + inpatient_beds_used_covid, data = covid)
+
+# Compute correlation matrix
+cor_matrix = cor(covid[, c("deaths_covid", "inpatient_beds_used_covid")])
+
+library(corrplot)
+corrplot(cor_matrix, method = "color") # Heat map (color coded correlation plot)
+```
+Strong positive correlation between the above variables, meaning they are closely associated.
+
+
+Q6) Any correlation between suspected Covid-19 the previous day and the confirmed cases the subsequent day?
+```{r}
+# Compute correlation coefficient
+cor(covid$previous_day_admission_adult_covid_suspected, covid$total_adult_patients_hospitalized_confirmed_covid)
+
+# Plot heat map (number coded)
+cor_matrix = cor(covid[, c("previous_day_admission_adult_covid_suspected", "total_adult_patients_hospitalized_confirmed_covid")])
+library(corrplot)
+corrplot(cor_matrix, method = "number")
+
+# Regression model to understand the significance of variables
+model <- lm(total_adult_patients_hospitalized_confirmed_covid ~ previous_day_admission_adult_covid_suspected, data = covid)
+summary(model)
+```
+Both the variables have weak positive correlation.
+Also, as p-values are lesser than 0.05, they are statistically significant.
+
+
+Extra - (Correlation between confirmed covid cases and covid deaths)
+```{r}
+cor(covid$deaths_covid, covid$hospital_onset_covid)
+```
+Again, it is moderately positive correlation, meaning the variables are weakly associated.
